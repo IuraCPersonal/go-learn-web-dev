@@ -11,11 +11,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// Update our snippetCreateForm struct to include struct tags which tell the
-// decoder how to map HTML form values into the different struct fields. So, for
-// example, here we're telling the decoder to store the value from the HTML form
-// input with the name "title" in the Title field. The struct tag `form:"-"`
-// tells the decoder to completely ignore a field during decoding.
 type snippetCreateForm struct {
 	Title               string
 	Content             string
@@ -37,15 +32,8 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
-	// When httprouter is parsing a request, the values of any named parameters
-	// will be stored in the request context. We'll talk about request context
-	// in detail later in the book, but for now it's enough to know that you can
-	// use the ParamsFromContext() function to retrieve a slice containing these
-	// parameter names and values like so:
 	params := httprouter.ParamsFromContext(r.Context())
 
-	// We can then use the ByName() method to get the value of the "id" named
-	// parameter from the slice and validate it as normal.
 	id, err := strconv.Atoi(params.ByName("id"))
 
 	if err != nil || id < 1 {
@@ -63,8 +51,15 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Use the PopString() method to retrieve the value for the "flash" key.
+	// PopString() also deletes the key and value from the session data, so it
+	// acts like a one-time fetch. If there is no matching key in the session
+	// data this will return the empty string.
+	flash := app.sessionManager.PopString(r.Context(), "flash")
+
 	data := app.newTemplateData(r)
 	data.Snippet = snippet
+	data.Flash = flash
 
 	app.render(w, http.StatusOK, "view.tmpl", data)
 }
@@ -86,7 +81,6 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Declare a new empty instance of the snippetCreateForm struct.
 	var form snippetCreateForm
 
 	err = app.decodePostForm(r, &form)
@@ -113,6 +107,10 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		app.serverError(w, err)
 		return
 	}
+
+	// Use the Put() method to add a string value ("Snippet successfully
+	// created!") and the corresponding key ("flash") to the session data.
+	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
 
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }

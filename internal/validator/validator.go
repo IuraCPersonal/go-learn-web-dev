@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 )
@@ -10,6 +11,7 @@ type Validator struct {
 }
 
 func (v *Validator) Valid() bool {
+	fmt.Println(v.FieldErrors)
 	return len(v.FieldErrors) == 0
 }
 
