@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-playground/form/v4"
+	"github.com/justinas/nosurf"
 )
 
 func (app *application) render(w http.ResponseWriter, status int, page string, data *templateData) {
@@ -65,13 +66,10 @@ func (app *application) notFound(w http.ResponseWriter) {
 
 func (app *application) newTemplateData(r *http.Request) *templateData {
 	return &templateData{
-		CurrentYear: time.Now().Year(),
-
-		// Add the flash message to the template data, if one exists.
-		Flash: app.sessionManager.PopString(r.Context(), "flash"),
-
-		// Add the authentication status to the template data.
+		CurrentYear:     time.Now().Year(),
+		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
 		IsAuthenticated: app.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	}
 }
 
